@@ -11,13 +11,28 @@ import csv
 
 # ---- Logging ----
 log_path = os.path.join(os.path.dirname(__file__), "etl.log")
+from logging.handlers import RotatingFileHandler
+
+handlers = [logging.StreamHandler(sys.stdout)]
+
+# Try to attach a rotating file handler, but gracefully continue if the log file is locked.
+try:
+    file_handler = RotatingFileHandler(
+        log_path,
+        maxBytes=5 * 1024 * 1024,  # 5 MB
+        backupCount=3
+    )
+    file_formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+    file_handler.setFormatter(file_formatter)
+    handlers.append(file_handler)
+except PermissionError:
+    # If log file is locked (e.g. Get-Content -Wait), fall back to console-only logging.
+    pass
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
-    handlers=[
-        logging.FileHandler(log_path),
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=handlers
 )
 logger = logging.getLogger(__name__)
 
